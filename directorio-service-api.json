@@ -1,0 +1,193 @@
+{
+  "info": {
+    "name": "Directorio Service API",
+    "description": "Colección de endpoints para probar el servicio de Directorio",
+    "version": "1.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080/api/v1"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/health",
+          "host": ["{{baseUrl}}"],
+          "path": ["health"]
+        }
+      }
+    },
+    {
+      "name": "Personas",
+      "item": [
+        {
+          "name": "Crear Persona",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Juan\",\n  \"apellidoPaterno\": \"Perez\",\n  \"apellidoMaterno\": \"Garcia\",\n  \"identificacion\": \"1234567890\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/personas",
+              "host": ["{{baseUrl}}"],
+              "path": ["personas"]
+            }
+          }
+        },
+        {
+          "name": "Buscar por Identificación",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/personas/identificacion/1234567890",
+              "host": ["{{baseUrl}}"],
+              "path": ["personas", "identificacion", "1234567890"]
+            }
+          }
+        },
+        {
+          "name": "Listar Personas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/personas?page=0&size=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["personas"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Obtener Persona",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/personas/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["personas", "1"]
+            }
+          }
+        },
+        {
+          "name": "Actualizar Persona",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Carlos\",\n  \"aPaterno\": \"Perez\",\n  \"aMaterno\": \"Garcia\",\n  \"identificacion\": \"999922333\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/personas/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["personas", "1"]
+            }
+          }
+        },
+        {
+          "name": "Eliminar Persona",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/personas/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["personas", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Facturas",
+      "item": [
+        {
+          "name": "Crear Factura",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"persona\": {\"id\": 1}, \n  \"monto\": 1500.50\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/facturas",
+              "host": ["{{baseUrl}}"],
+              "path": ["facturas"]
+            }
+          }
+        },
+        {
+          "name": "Obtener Factura",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/facturas/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["facturas", "1"]
+            }
+          }
+        },
+        {
+          "name": "Listar Facturas por Persona",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/personas/1/facturas?page=0&size=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["personas", "1", "facturas"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
