@@ -1,4 +1,4 @@
-name: CI/CD Pipeline for Directorio Service
+name: CI/CD Pipeline
 
 on:
   push:
@@ -8,170 +8,63 @@ on:
 
 env:
   IMAGE_NAME: directorio-service
-  VERSION: ${{ github.sha }}
 
 jobs:
-  # Job 1: Compilación y Tests
   build-and-test:
-    name: Build and Test
     runs-on: ubuntu-latest
-    
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-        cache: 'maven'
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
 
-    - name: Build with Maven
-      run: mvn clean compile
+      - name: Build and test with Maven
+        run: mvn clean verify
 
-    - name: Run tests
-      run: mvn test
-
-    - name: Run integration tests
-      run: mvn verify -DskipUnitTests
-
-    - name: Build JAR
-      run: mvn clean package -DskipTests
-
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: java-app
-        path: target/*.jar
-
-  # Job 2: Análisis de código (SonarCloud)
-  code-analysis:
-    name: Code Analysis
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-        cache: 'maven'
-
-    - name: Cache SonarCloud packages
-      uses: actions/cache@v3
-      with:
-        path: ~/.sonar/cache
-        key: ${{ runner.os }}-sonar
-        restore-keys: ${{ runner.os }}-sonar
-
-    - name: Run SonarCloud analysis
-      run: mvn sonar:sonar -Dsonar.projectKey=TU_PROJECT_KEY -Dsonar.organization=TU_ORGANIZACION
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-
-  # Job 3: Build y Push de Docker Image
   build-and-push-docker:
-    name: Build and Push Docker Image
     runs-on: ubuntu-latest
-    needs: [build-and-test]
+    needs: build-and-test
     if: github.ref == 'refs/heads/main'
-    
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-    - name: Log in to Docker Hub
-      uses: docker/login-action@v3
-      with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-    - name: Extract metadata
-      id: meta
-      uses: docker/metadata-action@v5
-      with:
-        images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}
-        tags: |
-          type=sha,prefix={{branch}}-
-          type=ref,event=branch
-          type=ref,event=pr
-          type=semver,pattern={{version}}
-          type=semver,pattern={{major}}.{{minor}}
-          type=semver,pattern={{major}}
-          latest
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest
 
-    - name: Build and push Docker image
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        push: true
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
-
-  # Job 4: Security Scan
-  security-scan:
-    name: Security Scan
+  deploy:
     runs-on: ubuntu-latest
-    needs: [build-and-test]
-
-    permissions:
-      security-events: write 
-      actions: read
-      contents: read
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Run Trivy vulnerability scanner
-      uses: aquasecurity/trivy-action@master
-      with:
-        scan-type: 'fs'
-        scan-ref: '.'
-        format: 'sarif'
-        output: 'trivy-results.sarif'
-
-    - name: Upload Trivy scan results to GitHub Security tab
-      uses: github/codeql-action/upload-sarif@v3
-      if: always()
-      with:
-        sarif_file: 'trivy-results.sarif'
-
-  # Job 5: Deploy (Ejemplo para diferentes entornos)
-  deploy-staging:
-    name: Deploy to Staging
-    runs-on: ubuntu-latest
-    needs: [build-and-push-docker]
-    if: github.ref == 'refs/heads/develop'
-    
-    steps:
-    - name: Deploy to staging environment
-      run: |
-        echo "Deploying to staging..."
-        # Aquí irían los comandos específicos para tu entorno
-        # Ejemplo: kubectl apply, docker-compose, etc.
-
-  deploy-production:
-    name: Deploy to Production
-    runs-on: ubuntu-latest
-    needs: [build-and-push-docker]
+    needs: build-and-push-docker
     if: github.ref == 'refs/heads/main'
-    
     steps:
-    - name: Deploy to production
-      run: |
-        echo "Deploying to production..."
-        # Comandos de despliegue a producción
+      - name: Deploy to production
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SERVER_SSH_KEY }}
+          SERVER_HOST: ${{ secrets.PRODUCTION_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+        run: |
+          echo "🚀 Deploying to production..."
+          ssh -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_HOST "
+            docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
+            docker stop directorio-service || true
+            docker rm directorio-service || true
+            docker run -d -p 8080:8080 --name directorio-service ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest
+          "

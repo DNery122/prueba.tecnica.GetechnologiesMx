@@ -1,0 +1,9 @@
+version: '3.8'
+
+services:
+  directorio-service:
+    image: ${DOCKERHUB_USERNAME}/directorio-service:latest
+    container_name: directorio-service
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
